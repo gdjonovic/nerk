@@ -1,4 +1,4 @@
 nerk
 ====
 
-Neuro-fuzzy Emotion Recognizer using Kinect - NERK
+Neuro-fuzzy Emotion Recognition using Kinect - NERK
