@@ -70,6 +70,27 @@ namespace FaceTrackingBasics
         public static double lipStrecher;
         public static double outerBrowraiser;
 
+        public static bool isLeftEyeOn = true;
+        public static bool isRightEyeOn = true;
+        public static bool isMouthOn = true;
+        public static bool isTopHeadOn = false;
+        public static bool isChinOn = false;
+        public static bool isFaceModelOn = false;
+        public static bool IsLookingToSensor = false;
+
+        public static Point leftEyeCenter;
+        public static Point rightEyeCenter;
+        public static Point chinCenter;
+
+
+        public static List<Vector3DF> leftEyePoints3D = new List<Vector3DF>();
+        public static List<Vector3DF> rightEyePoints3D = new List<Vector3DF>();
+        public static List<Vector3DF> mountPoints3D = new List<Vector3DF>();
+
+        public static List<Point> leftEyePoints2D = new List<Point>();
+        public static List<Point> rightEyePoints2D = new List<Point>();
+        public static List<Point> mountPoints2D = new List<Point>();
+
         public FaceTrackingViewer()
         {
             this.InitializeComponent();
@@ -350,38 +371,140 @@ namespace FaceTrackingBasics
                     faceModelGroup.Children.Add(faceTriangle);
                 }
 
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.BottomOfChin], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.TopSkull], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.TopSkull], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.LeftCornerMouth], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.RightCornerMouth], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.LeftOfLeftEyebrow], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.LeftOfRightEyebrow], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.MiddleBottomOfLeftEyebrow], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.MiddleBottomOfRightEyebrow], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.MiddleTopOfLeftEyebrow], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.MiddleTopOfRightEyebrow], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.RightOfLeftEyebrow], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.RightOfRightEyebrow], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.MiddleTopDipUpperLip], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.MiddleTopLowerLip], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.LeftSideOfCheek], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.RightSideOfChin], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.TopLeftForehead], drawingContext);
-                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.TopRightForehead], drawingContext);
+                 SkeletonPoint po = new SkeletonPoint();
+                po.X = faceShapePoints[FeaturePoint.InnerBottomRightPupil].X;
+                po.Y = faceShapePoints[FeaturePoint.InnerBottomRightPupil].Y;
+                po.Z = faceShapePoints[FeaturePoint.InnerBottomRightPupil].Z;
+                leftEyeCenter = SkeletonPointToScreen(po);
 
+                SkeletonPoint po1 = new SkeletonPoint();
+                po1.X = faceShapePoints[FeaturePoint.InnerBottomLeftPupil].X;
+                po1.Y = faceShapePoints[FeaturePoint.InnerBottomLeftPupil].Y;
+                po1.Z = faceShapePoints[FeaturePoint.InnerBottomLeftPupil].Z;
+
+                rightEyeCenter = SkeletonPointToScreen(po1);
+                chinCenter = new Point(faceShapePoints[FeaturePoint.AboveChin].X, faceShapePoints[FeaturePoint.AboveChin].Y);
                 var leftEyeZ = faceShapePoints[FeaturePoint.AboveMidUpperLeftEyelid].Z;
                 var rightEyeZ = faceShapePoints[FeaturePoint.AboveMidUpperRightEyelid].Z;
-                var IsLookingToSensor = Math.Abs(leftEyeZ - rightEyeZ) <= 0.02f;
-                if (IsLookingToSensor)
-                {
-                    ProjectVector3Dto2D(faceShapePoints[FeaturePoint.InnerTopLeftPupil], drawingContext);
-                    ProjectVector3Dto2D(faceShapePoints[FeaturePoint.InnerTopRightPupil], drawingContext);
+                IsLookingToSensor = Math.Abs(leftEyeZ - rightEyeZ) <= 0.02f;
+
+                if(isChinOn){
+                    DrawChinPoints(drawingContext);
                 }
 
-                
-                //drawingContext.DrawGeometry(Brushes.LightYellow, new Pen(Brushes.LightYellow, 1.0), faceModelGroup);
+                if (isTopHeadOn)
+                {
+                    DrawTopHeadPoints(drawingContext);
+                }
 
+                //mounth region
+                if (isMouthOn)
+                {
+                    GetMouthPoints();
+                    foreach (Vector3DF vector in mountPoints3D)
+                    {
+                        ProjectVector3Dto2D(vector, drawingContext);
+                    }
+                }
+
+                //left eye region
+                if (isRightEyeOn)
+                {
+                    GetRightEyePoints();
+                    foreach (Vector3DF vector in rightEyePoints3D)
+                    {
+                        ProjectVector3Dto2D(vector, drawingContext);
+                    }
+                }
+
+                //right eye region
+                if (isLeftEyeOn)
+                {
+                    GetLeftEyePoints();
+                    foreach (Vector3DF vector in leftEyePoints3D)
+                    {
+                        ProjectVector3Dto2D(vector, drawingContext);
+                    }
+                }
+
+                if(isFaceModelOn)
+                drawingContext.DrawGeometry(Brushes.LightYellow, new Pen(Brushes.LightYellow, 1.0), faceModelGroup);
+
+            }
+
+
+            private void GetLeftEyePoints()
+            {
+                leftEyePoints3D = new List<Vector3DF>();
+                leftEyePoints3D.Add(faceShapePoints[FeaturePoint.LeftOfRightEyebrow]);
+                leftEyePoints3D.Add(faceShapePoints[FeaturePoint.MiddleBottomOfRightEyebrow]);
+                leftEyePoints3D.Add(faceShapePoints[FeaturePoint.MiddleTopOfRightEyebrow]);
+                leftEyePoints3D.Add(faceShapePoints[FeaturePoint.RightOfRightEyebrow]);
+                leftEyePoints3D.Add(faceShapePoints[FeaturePoint.BelowThreeFourthRightEyelid]);
+                leftEyePoints3D.Add(faceShapePoints[FeaturePoint.AboveThreeFourthRightEyelid]);
+                leftEyePoints3D.Add(faceShapePoints[FeaturePoint.AboveOneFourthRightEyelid]);
+                leftEyePoints3D.Add(faceShapePoints[FeaturePoint.AboveMidUpperRightEyelid]);
+                leftEyePoints3D.Add(faceShapePoints[FeaturePoint.InnerCornerRightEye]);
+                leftEyePoints3D.Add(faceShapePoints[FeaturePoint.InnerTopRightPupil]);
+                leftEyePoints2D = ProjectTo2D(leftEyePoints3D);
+            }
+
+            private void GetRightEyePoints()
+            {
+                rightEyePoints3D = new List<Vector3DF>();
+                rightEyePoints3D.Add(faceShapePoints[FeaturePoint.LeftOfLeftEyebrow]);
+                rightEyePoints3D.Add(faceShapePoints[FeaturePoint.MiddleBottomOfLeftEyebrow]);
+                rightEyePoints3D.Add(faceShapePoints[FeaturePoint.MiddleTopOfLeftEyebrow]);
+                rightEyePoints3D.Add(faceShapePoints[FeaturePoint.RightOfLeftEyebrow]);
+                rightEyePoints3D.Add(faceShapePoints[FeaturePoint.BelowThreeFourthLeftEyelid]);
+                rightEyePoints3D.Add(faceShapePoints[FeaturePoint.AboveThreeFourthLeftEyelid]);
+                rightEyePoints3D.Add(faceShapePoints[FeaturePoint.AboveOneFourthLeftEyelid]);
+                rightEyePoints3D.Add(faceShapePoints[FeaturePoint.AboveMidUpperLeftEyelid]);
+                rightEyePoints3D.Add(faceShapePoints[FeaturePoint.InnerCornerLeftEye]);
+                rightEyePoints3D.Add(faceShapePoints[FeaturePoint.InnerTopLeftPupil]);
+                rightEyePoints2D = ProjectTo2D(rightEyePoints3D);
+            }
+
+            private void  GetMouthPoints(){
+                mountPoints3D = new List<Vector3DF>();
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.LeftCornerMouth]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.RightCornerMouth]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.MiddleTopDipUpperLip]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.MiddleTopLowerLip]);
+                mountPoints3D.Add(faceShapePoints[111]);
+                mountPoints3D.Add(faceShapePoints[112]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.LeftBottomLowerLip]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.LeftBottomUpperLip]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.LeftTopDipUpperLip]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.LeftTopLowerLip]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.LeftTopUpperLip]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.MiddleBottomUpperLip]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.MiddleTopDipUpperLip]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.OutsideLeftCornerMouth]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.OutsideRightCornerMouth]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.RightBottomLowerLip]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.RightBottomUpperLip]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.RightTopDipUpperLip]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.RightTopLowerLip]);
+                mountPoints3D.Add(faceShapePoints[FeaturePoint.RightTopUpperLip]);
+                mountPoints2D = ProjectTo2D(mountPoints3D);
+            }
+
+            private void DrawChinPoints(DrawingContext drawingContext)
+            {
+                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.AboveChin], drawingContext);
+                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.BottomOfLeftCheek], drawingContext);
+                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.BottomOfRightCheek], drawingContext);
+                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.LeftSideOfCheek], drawingContext);
+                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.RightSideOfChin], drawingContext);
+                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.BottomOfChin], drawingContext);
+            }
+
+            private void DrawTopHeadPoints(DrawingContext drawingContext)
+            {
+                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.TopSkull], drawingContext);
+                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.TopLeftForehead], drawingContext);
+                ProjectVector3Dto2D(faceShapePoints[FeaturePoint.TopRightForehead], drawingContext);
             }
 
             private void ProjectVector3Dto2D(Vector3DF p, DrawingContext drawingContext)
@@ -390,7 +513,21 @@ namespace FaceTrackingBasics
                 po.X = p.X;
                 po.Y = p.Y;
                 po.Z = p.Z;
-                drawingContext.DrawEllipse(Brushes.Yellow, new Pen(Brushes.Yellow, 1.0), SkeletonPointToScreen(po), 1, 1);
+                drawingContext.DrawEllipse(Brushes.Yellow, new Pen(Brushes.Yellow, 0.5), SkeletonPointToScreen(po), 0.5, 0.5);
+            }
+
+            private List<Point> ProjectTo2D(List<Vector3DF> dVectors){
+                List<Point> points2D = new List<Point>();
+                foreach (Vector3DF vector in dVectors)
+                {
+                    SkeletonPoint po = new SkeletonPoint();
+                    po.X = vector.X;
+                    po.Y = vector.Y;
+                    po.Z = vector.Z;
+                    DepthImagePoint depthPoint = this.Kinect.CoordinateMapper.MapSkeletonPointToDepthPoint(po, DepthImageFormat.Resolution640x480Fps30);
+                    points2D.Add(new Point(depthPoint.X, depthPoint.Y));
+                }
+                return points2D;
             }
 
             /// <summary>
@@ -451,18 +588,17 @@ namespace FaceTrackingBasics
 
                         this.facePoints = frame.GetProjected3DShape();
                         this.faceShapePoints = frame.Get3DShape();
-                        Console.WriteLine("points" + faceShapePoints.Count);
                         if (frame.TrackSuccessful)
                         {
                             // Retrieve only the Animation Units coeffs.
                             var AUCoeff = frame.GetAnimationUnitCoefficients();
 
-                            jawLowerer = AUCoeff[AnimationUnit.JawLower];
-                            eyeBrow = AUCoeff[AnimationUnit.BrowRaiser];
-                            lipCornerDepressor = AUCoeff[AnimationUnit.LipCornerDepressor];
-                            upperLipRaiser = AUCoeff[AnimationUnit.LipRaiser];
-                            lipStrecher = AUCoeff[AnimationUnit.LipStretcher];
-                            outerBrowraiser = AUCoeff[AnimationUnit.BrowLower];
+                            jawLowerer = Math.Round(AUCoeff[AnimationUnit.JawLower],3);
+                            eyeBrow = Math.Round(AUCoeff[AnimationUnit.BrowRaiser],3);
+                            lipCornerDepressor = Math.Round(AUCoeff[AnimationUnit.LipCornerDepressor],3);
+                            upperLipRaiser = Math.Round(AUCoeff[AnimationUnit.LipRaiser],3);
+                            lipStrecher =  Math.Round(AUCoeff[AnimationUnit.LipStretcher],3);
+                            outerBrowraiser = Math.Round(AUCoeff[AnimationUnit.BrowLower],3);
 
                         }
                     }

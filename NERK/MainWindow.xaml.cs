@@ -12,7 +12,10 @@ namespace FaceTrackingBasics
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
     using Microsoft.Kinect;
+    using System.Windows.Shapes;
     using Microsoft.Kinect.Toolkit;
+    using System.Windows.Controls;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -142,7 +145,23 @@ namespace FaceTrackingBasics
                 UpperLipRaiser.Text = "UpperLipRaiser: " + FaceTrackingViewer.upperLipRaiser;
                 LipStrecher.Text = "LipStrecher: " + FaceTrackingViewer.lipStrecher;
                 OuterBrowraiser.Text = "OuterBrowraiser: " + FaceTrackingViewer.outerBrowraiser;
+                if (FaceTrackingViewer.isLeftEyeOn)
+                {
+                   Dictionary<String, double> resultParams = CoefficientCalculatorUtil.CalculateRegionMoments(FaceTrackingViewer.leftEyePoints2D);
+                   lbLeftEyeEccentricity.Content = resultParams["eccentricity"];
+                }
 
+                if (FaceTrackingViewer.isRightEyeOn)
+                {
+                    Dictionary<String, double> resultParams = CoefficientCalculatorUtil.CalculateRegionMoments(FaceTrackingViewer.rightEyePoints2D);
+                    lbRightEyeEccentricity.Content = resultParams["eccentricity"];
+                }
+
+                if (FaceTrackingViewer.isMouthOn)
+                {
+                    Dictionary<String, double> resultParams = CoefficientCalculatorUtil.CalculateRegionMoments(FaceTrackingViewer.mountPoints2D);
+                    lbMouthEyeEccentricity.Content = resultParams["eccentricity"];
+                }
             }
 
         }
@@ -217,6 +236,32 @@ namespace FaceTrackingBasics
                     colorImageFrame.Width * Bgr32BytesPerPixel,
                     0);
             }
+        }
+
+        private void cbLeftEye_Click(object sender, RoutedEventArgs e)
+        {
+            FaceTrackingViewer.isLeftEyeOn = (bool)cbLeftEye.IsChecked;
+        
+        }
+
+        private void cbRightEye_Click(object sender, RoutedEventArgs e)
+        {
+            FaceTrackingViewer.isRightEyeOn = (bool)cbRightEye.IsChecked;
+        }
+
+        private void cbMouth_Click(object sender, RoutedEventArgs e)
+        {
+            FaceTrackingViewer.isMouthOn = (bool)cbMouth.IsChecked;
+        }
+
+        private void cbTopHead_Click(object sender, RoutedEventArgs e)
+        {
+            FaceTrackingViewer.isTopHeadOn = (bool)cbMouth.IsChecked;
+        }
+
+        private void cbChin_Click(object sender, RoutedEventArgs e)
+        {
+            FaceTrackingViewer.isChinOn = (bool)cbChin.IsChecked;
         }
     }
 }
