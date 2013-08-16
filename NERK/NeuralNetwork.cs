@@ -11,7 +11,7 @@ namespace FaceTrackingBasics
         private double[] input;
         private double[] output;
 
-        private int index;//koje slovo obucavamo
+        private int index; //emotion index
 
         private bool initialized = false;
         private double match;
@@ -49,7 +49,7 @@ namespace FaceTrackingBasics
         }
 
 
-        public void trainNetwork(int emotionIntex)
+        public void trainNetwork(int emotionIndex)
         {
             double reward = 0.0;
             double punishment = 0.0;
@@ -69,9 +69,9 @@ namespace FaceTrackingBasics
             for (int j = 0; j < input.Length; j++)
             {
                 if (input[j] > 0.3)
-                    weights[j][emotionIntex - 1] = reward;
+                    weights[j][emotionIndex - 1] = reward;
                 else
-                    weights[j][emotionIntex - 1] = punishment;
+                    weights[j][emotionIndex - 1] = punishment;
             }
 
         }
@@ -95,7 +95,7 @@ namespace FaceTrackingBasics
                 }
             }
             index = max;
-            match = Math.Round(match);
+            match = Math.Round(match); //matching %
         }
 
         double activating(double d)
