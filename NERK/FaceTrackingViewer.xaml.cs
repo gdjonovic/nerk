@@ -82,6 +82,13 @@ namespace FaceTrackingBasics
         public static Point rightEyeCenter;
         public static Point chinCenter;
 
+        public static Point innerLeftEyeBrow;
+        public static Point innerRightEyeBrow;
+        public static Point outerLeftEyeBrow;
+        public static Point outerRightEyeBrow;
+        public static Point rightMouthCorner;
+        public static Point leftMouthCorner;
+
 
         public static List<Vector3DF> leftEyePoints3D = new List<Vector3DF>();
         public static List<Vector3DF> rightEyePoints3D = new List<Vector3DF>();
@@ -427,6 +434,18 @@ namespace FaceTrackingBasics
                     }
                 }
 
+                leftEyeCenter = ProjectTo2D(faceShapePoints[FeaturePoint.InnerTopRightPupil]);
+                rightEyeCenter = ProjectTo2D(faceShapePoints[FeaturePoint.InnerTopLeftPupil]);
+                chinCenter = ProjectTo2D(faceShapePoints[FeaturePoint.AboveChin]);
+
+                innerLeftEyeBrow = ProjectTo2D(faceShapePoints[FeaturePoint.LeftOfRightEyebrow]);
+                innerRightEyeBrow = ProjectTo2D(faceShapePoints[FeaturePoint.LeftOfLeftEyebrow]);
+                outerLeftEyeBrow = ProjectTo2D(faceShapePoints[FeaturePoint.RightOfRightEyebrow]);
+                outerRightEyeBrow = ProjectTo2D(faceShapePoints[FeaturePoint.RightOfLeftEyebrow]);
+                rightMouthCorner = ProjectTo2D(faceShapePoints[FeaturePoint.LeftCornerMouth]);
+                leftMouthCorner = ProjectTo2D(faceShapePoints[FeaturePoint.RightCornerMouth]);
+
+
                 if(isFaceModelOn)
                 drawingContext.DrawGeometry(Brushes.LightYellow, new Pen(Brushes.LightYellow, 1.0), faceModelGroup);
 
@@ -514,6 +533,18 @@ namespace FaceTrackingBasics
                 po.Y = p.Y;
                 po.Z = p.Z;
                 drawingContext.DrawEllipse(Brushes.Yellow, new Pen(Brushes.Yellow, 0.5), SkeletonPointToScreen(po), 0.5, 0.5);
+            }
+
+            private Point ProjectTo2D(Vector3DF vector)
+            {
+
+                    SkeletonPoint po = new SkeletonPoint();
+                    po.X = vector.X;
+                    po.Y = vector.Y;
+                    po.Z = vector.Z;
+                    DepthImagePoint depthPoint = this.Kinect.CoordinateMapper.MapSkeletonPointToDepthPoint(po, DepthImageFormat.Resolution640x480Fps30);
+                    return new Point(depthPoint.X, depthPoint.Y);
+
             }
 
             private List<Point> ProjectTo2D(List<Vector3DF> dVectors){

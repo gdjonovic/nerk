@@ -28,6 +28,9 @@ namespace FaceTrackingBasics
         private byte[] colorImageData;
         private ColorImageFormat currentColorImageFormat = ColorImageFormat.Undefined;
         private KinectSensor newSensor;
+        private Boolean isRecordingOn = false;
+        private TrainingData trainingData = TrainingData.Instance();
+        private NeuralNetwork nn = NeuralNetwork.Instance();
 
         public MainWindow()
         {
@@ -39,6 +42,25 @@ namespace FaceTrackingBasics
             sensorChooser.KinectChanged += SensorChooserOnKinectChanged;
 
             sensorChooser.Start();
+            List<double[]> smileData = trainingData.Load("smileNERK");
+            foreach (double[] inputs in smileData)
+            {
+                nn.SetInput(inputs);
+                nn.trainNetwork(1);
+            }
+            List<double[]> sadData = trainingData.Load("sadNERK");
+            foreach (double[] inputs in sadData)
+            {
+                nn.SetInput(inputs);
+                nn.trainNetwork(2);
+            }
+            List<double[]> neutralData = trainingData.Load("neutralNERK");
+            foreach (double[] inputs in neutralData)
+            {
+                nn.SetInput(inputs);
+                nn.trainNetwork(3);
+            }
+            
         }
 
         private void SensorChooserOnKinectChanged(object sender, KinectChangedEventArgs kinectChangedEventArgs)
@@ -131,6 +153,16 @@ namespace FaceTrackingBasics
         /// <param name="drawingContext">drawing context to draw to</param>
         private void AnalizeFace(Skeleton skeleton)
         {
+            double[] inputs = new double[9];
+            // inputs[0] jawLowerer
+            // inputs[1] eyeBrow
+            // inputs[2] lipCornerDepressor
+            // inputs[3] upperLipRaiser
+            // inputs[4] lipStrecher
+            // inputs[5] OuterEyeBrowRaiser
+            // inputs[6] lefteyeEccentricity
+            // inputs[7] righteyeEccentricity
+            // inputs[8] mouthEccentricity
 
            
             double pixelMeterRatio = CalculatePixelMeterRatio(skeleton);
@@ -140,27 +172,61 @@ namespace FaceTrackingBasics
                 FaceWidth.Text = "Face width: " + Math.Round((faceTrackingViewer.GetFaceWidth() * pixelMeterRatio) * 100, 1).ToString() + " cm";
                 FaceLenght.Text = "Face lenght: " + Math.Round((faceTrackingViewer.GetFaceLenght() * pixelMeterRatio) * 100, 1).ToString() + " cm";
                 JawLowerer.Text = "JawLowerer: " + FaceTrackingViewer.jawLowerer;
+                inputs[0] = Math.Round(FaceTrackingViewer.jawLowerer, 1);
                 EyeBrow.Text = "EyeBrow: " + FaceTrackingViewer.eyeBrow;
+                inputs[1] = Math.Round(FaceTrackingViewer.eyeBrow, 1);
                 LipCornerDepressor.Text = "LipCornerDepressor: " + FaceTrackingViewer.lipCornerDepressor;
+                inputs[2] = Math.Round(FaceTrackingViewer.lipCornerDepressor, 1);
                 UpperLipRaiser.Text = "UpperLipRaiser: " + FaceTrackingViewer.upperLipRaiser;
+                inputs[3] = Math.Round(FaceTrackingViewer.upperLipRaiser, 1);
                 LipStrecher.Text = "LipStrecher: " + FaceTrackingViewer.lipStrecher;
+                inputs[4] = Math.Round(FaceTrackingViewer.lipStrecher, 1);
                 OuterBrowraiser.Text = "OuterBrowraiser: " + FaceTrackingViewer.outerBrowraiser;
+                inputs[5] = Math.Round(FaceTrackingViewer.outerBrowraiser, 1);
                 if (FaceTrackingViewer.isLeftEyeOn)
                 {
                    Dictionary<String, double> resultParams = CoefficientCalculatorUtil.CalculateRegionMoments(FaceTrackingViewer.leftEyePoints2D);
                    lbLeftEyeEccentricity.Content = resultParams["eccentricity"];
+                   inputs[6] = resultParams["eccentricity"];
+                   lbLeftEyeInnerAngle.Content = CoefficientCalculatorUtil.CalculateAngle(FaceTrackingViewer.leftEyeCenter, FaceTrackingViewer.innerLeftEyeBrow);
+                   lbLeftEyeOuterAngle.Content = CoefficientCalculatorUtil.CalculateAngle(FaceTrackingViewer.leftEyeCenter, FaceTrackingViewer.outerLeftEyeBrow);
                 }
 
                 if (FaceTrackingViewer.isRightEyeOn)
                 {
                     Dictionary<String, double> resultParams = CoefficientCalculatorUtil.CalculateRegionMoments(FaceTrackingViewer.rightEyePoints2D);
                     lbRightEyeEccentricity.Content = resultParams["eccentricity"];
+                    inputs[7] = resultParams["eccentricity"];
+                    lbRightEyeInnerAngle.Content = CoefficientCalculatorUtil.CalculateAngle(FaceTrackingViewer.rightEyeCenter, FaceTrackingViewer.innerRightEyeBrow);
+                    lbRightEyeOuterAngle.Content = CoefficientCalculatorUtil.CalculateAngle(FaceTrackingViewer.rightEyeCenter, FaceTrackingViewer.outerRightEyeBrow);
                 }
 
                 if (FaceTrackingViewer.isMouthOn)
                 {
                     Dictionary<String, double> resultParams = CoefficientCalculatorUtil.CalculateRegionMoments(FaceTrackingViewer.mountPoints2D);
                     lbMouthEyeEccentricity.Content = resultParams["eccentricity"];
+                    inputs[8] = resultParams["eccentricity"];
+                    lbMouthLeftCornerAngle.Content = CoefficientCalculatorUtil.CalculateAngle(FaceTrackingViewer.chinCenter, FaceTrackingViewer.leftMouthCorner);
+                    lbMouthRightCornerAngle.Content = CoefficientCalculatorUtil.CalculateAngle(FaceTrackingViewer.chinCenter, FaceTrackingViewer.rightMouthCorner);
+                }
+
+                if (isRecordingOn)
+                {
+                    trainingData.Add(inputs);
+                }
+                else
+                {
+                    nn.SetInput(inputs);
+                    nn.recognizeEmotion();
+                    if(nn.Index == 1){
+                        lbRecognizedEmotion.Content = "Smile";
+                    }else if(nn.Index == 2){
+                        lbRecognizedEmotion.Content = "Surprise";
+                    }else if (nn.Index == 3){
+                        lbRecognizedEmotion.Content = "Neutral";
+                    }else{
+                    }
+                    
                 }
             }
 
@@ -262,6 +328,22 @@ namespace FaceTrackingBasics
         private void cbChin_Click(object sender, RoutedEventArgs e)
         {
             FaceTrackingViewer.isChinOn = (bool)cbChin.IsChecked;
+        }
+
+        private void btnRecordData_Click(object sender, RoutedEventArgs e)
+        {
+            if (isRecordingOn)
+            {
+                //stop recording
+                isRecordingOn = false;
+                btnRecordData.Content = "Record data";
+                trainingData.Save();
+            }
+            else
+            {
+                isRecordingOn = true;
+                btnRecordData.Content = "Stop recording";
+            }
         }
     }
 }

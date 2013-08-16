@@ -15,9 +15,16 @@ namespace FaceTrackingBasics
         /// <summary>
         /// Calculates angle in radians between two points and x-axis.
         /// </summary>
-        private double CalculateAngle(Point start, Point end)
+        public static double CalculateAngle(Point start, Point end)
         {
-            return Math.Atan2(start.Y - end.Y, end.X - start.X) * Rad2Deg;
+            if (Math.Atan2(start.Y - end.Y, end.X - start.X) > 1)
+            {
+                return Math.Round(1/Math.Atan2(start.Y - end.Y, end.X - start.X),1);
+            }
+            else
+            {
+                return Math.Round(Math.Atan2(start.Y - end.Y, end.X - start.X),1);
+            }
         }
 
 
@@ -85,7 +92,7 @@ namespace FaceTrackingBasics
             theta = 0.5 * Math.Atan2(2 * c11, (c20 - c02));
 
             resultParams.Add("theta", theta);
-            resultParams.Add("eccentricity", eccentricity);
+            resultParams.Add("eccentricity", Math.Round(eccentricity,1));
 
             return resultParams;
         }
